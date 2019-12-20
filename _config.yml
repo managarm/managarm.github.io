@@ -1,0 +1,15 @@
+# Site settings.
+title: The Managarm Project
+#email: info@managarm.org
+description: >
+    Managarm is a pragmatic microkernel-based OS with fully asynchronous
+    I/O.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "http://managarm.org"
+github_username: managarm
+
+# Build settings.
+markdown: kramdown
+kramdown:
+    input: GFM
+    hard_wrap: false
