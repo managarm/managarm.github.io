@@ -1,6 +1,7 @@
 ---
 layout: post
 title:  Managarm at the End of 2019
+excerpt: Managarm is a pragmatic microkernel-based OS with fully asynchronous I/O. We review our achievements of 2019 and set goals for 2020.
 ---
 <span style="font-size: 11pt;">Post by Alexander van der Grinten
 ([@avdgrinten](https://github.com/avdgrinten))
