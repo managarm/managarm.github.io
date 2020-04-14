@@ -126,13 +126,13 @@ by a more severe gap:
 
 After compilation, several issues remain that prevent Mednafen from working correctly. Often, programs need some minor corrections, for example in C library functions. In the case of Mednafen, however, some more work is required. We quickly discuss missing features that have been implemented to finally make Mednafen work correctly.
 
-**pthreads.** While mlibc already has stubs for all of the `pthread_*` functions, thread creaton via `pthread_create` was not implemented yet. This is required since Mednafen uses a second thread for audio handling. Implementing `pthread_create` consists of two parts:
+**pthreads.** While mlibc already has stubs for all of the `pthread_*` functions, thread creation via `pthread_create` was not implemented yet. This is required since Mednafen uses a second thread for audio handling. Implementing `pthread_create` consists of two parts:
  - implementing this function in the C library,
  - and handling threads in Managarm's POSIX server.
 
 To this end, a new request (`sys_clone`) to create a new thread is added to the POSIX server. In mlibc, the `pthread_create` function is modified to invoke the newly added `sys_clone` request. Before calling into the POSIX server, mlibc prepares the stack of the new thread and sets up the so-called *thread control block* (TCB) which stores all thread-local variables. Afterwards, control is handed over to the user provided function.
 
-(While we are still missing an implementation for `pthread_join` and possibly other thread related functions, this is enough to run the emulator. It does become a problem when ones tries to to close and results in a crash.)
+(While we are still missing an implementation for `pthread_join` and possibly other thread related functions, this is enough to run the emulator. It does become a problem when ones tries to close Mednafen and results in a crash.)
 
 **POSIX semaphores.** Like pthread mutexes, POSIX semaphores are used to enforce mutual exclusion of concurrently executing threads. Since mlibc already supports the `pthread_mutex_*` functions, adding support for `sem_*` is comparatively simple. Indeed, both the pthread functions and POSIX semaphores are implemented on top of futexes.³
 
