@@ -120,7 +120,7 @@ by a more severe gap:
 
 ***Missing iconv.*** At this point, the build fails due to missing `iconv_*` declarations. These are part of the C library (or, alternatively, can be obtained from GNU's libiconv library). Thus, they can be fixed in the same way as the `sem_*` issues mentioned above, by adding new declarations and stubs to mlibc.²
 
-² <span style="font-size: smaller;">Theses declarations can be found in [`options/posix/include/iconv.h`](https://github.com/managarm/mlibc/blob/9c994bc925885a4db8f51abd199f09f6874bdb95/options/posix/include/iconv.h); the stubs are in [`options/posix/generic/iconv-stubs.cpp`](https://github.com/managarm/mlibc/blob/9c994bc925885a4db8f51abd199f09f6874bdb95/options/posix/generic/iconv-stubs.cpp).</span>
+² <span style="font-size: smaller;">These declarations can be found in [`options/posix/include/iconv.h`](https://github.com/managarm/mlibc/blob/9c994bc925885a4db8f51abd199f09f6874bdb95/options/posix/include/iconv.h); the stubs are in [`options/posix/generic/iconv-stubs.cpp`](https://github.com/managarm/mlibc/blob/9c994bc925885a4db8f51abd199f09f6874bdb95/options/posix/generic/iconv-stubs.cpp).</span>
 
 ## Implementation work
 
