@@ -20,8 +20,7 @@ For readers who are unfamilar with [Managarm](https://github.com/managarm/managa
 it is a microkernel-based OS
 that supports asynchronicity throughout the entire system while also providing
 compatibility with lots of Linux software.
-
-Feel free to **try out Managarm** (e.g., in a virtual machine).
+Feel free to try out Managarm (e.g., in a virtual machine).
 [Our README](https://github.com/managarm/managarm) contains a download link for
 a nightly image and instruction for trying out the system.
 
@@ -69,10 +68,10 @@ process, implementation details, and the obstacles we faced along the way.
 
 ### Rust Support in User Space
 
-Over the last 3 months, [@64](https://github.com/64) has been working to bring Rust to Managarm. So far, this has consisted of:
+Project member [@64](https://github.com/64) has been working to bring Rust to Managarm. So far, this has consisted of:
 * Adding information about our `x86_64-unknown-managarm-system` target to [rustc](https://github.com/rust-lang/rust) (so that it can link with our LLVM and such). This initial work was done by [@avdgrinten](https://github.com/avdgrinten).
 * Adding bindings for [mlibc](https://github.com/managarm/mlibc) in Rust's [libc](https://github.com/rust-lang/libc) crate ([managarm/bootstrap-managarm#96](https://github.com/managarm/bootstrap-managarm/pull/96/files#diff-3d13f40b9e85b21978241de17ebb802857f04bf1af5b1f0d80f1c76f50d040d2)).
-* Patching rust's standard library to support Managarm, and stubbing out functionality that we don't implement yet ([managarm/bootstrap-managarm#96](https://github.com/managarm/bootstrap-managarm/pull/96/files#diff-b086cf11aa261f991d7eb66b8164907ad9ee5bc4165cbc1739d65fcd2607be78)).
+* Patching Rust's standard library to support Managarm, and stubbing out functionality that we do not implement yet ([managarm/bootstrap-managarm#96](https://github.com/managarm/bootstrap-managarm/pull/96/files#diff-b086cf11aa261f991d7eb66b8164907ad9ee5bc4165cbc1739d65fcd2607be78)).
 * Integrating [cargo](https://github.com/rust-lang/cargo) with our build system so that we can cross-compile crates for Managarm ([managarm/xbstrap#48](https://github.com/managarm/xbstrap/pull/48)).
 * Porting [ripgrep](https://github.com/BurntSushi/ripgrep) and [exa](https://github.com/ogham/exa) ([managarm/bootstrap-managarm#102](https://github.com/managarm/bootstrap-managarm/pull/102)).
 
@@ -82,12 +81,12 @@ In the long term, we would like to support Rust drivers for Managarm. This will 
 
 ### Build Servers and xbps Packages
 
-Two years ago, we deployed [xbbs](https://github.com/managarm/xbbs), a distributed build server specifically crafted for [xbstrap](https://github.com/managarm/xbstrap) and [xbps](https://github.com/void-linux/xbps). It allows us to efficiently and effectively split building a managarm distribution across a handful of servers and to only update parts of the distribution we changed. This has allowed us to come closer to our goal of porting and utilizing xbps for managing system packages in our distribution images. You can use it today to get packages built by us on https://builds.managarm.org/ but you cannot use it in the system itself with xbps just yet, although work is ongoing to fix that.
+Two years ago, we deployed [xbbs](https://github.com/managarm/xbbs), a distributed build server specifically crafted for [xbstrap](https://github.com/managarm/xbstrap) and [xbps](https://github.com/void-linux/xbps) (i.e., the package manager popularized by the Void Linux distribution). It allows us to effectively distribute builds of individual package of our Managarm distribution across a handful of servers, while only rebuilding parts of the distribution that have changed since the last build. Additionally, we got closer to our goal of porting and utilizing xbps itself to manage system packages in our distribution images. You can use it today to get packages built by us on https://builds.managarm.org/ but you cannot use it in the system itself with xbps just yet, although work is ongoing to fix that.
 
 The goals of this "subproject" include:
 
-- Live building packages as updates are pushed and checking their validity (finding soname changes and similar breaking issues)
-- Allowing for spotting errors caused by inconsistent/unclean build environments
+- Building packages as updates are pushed and checking their validity (finding SONAME changes and similar breaking issues)
+- Automated detection of errors caused by inconsistent/unclean build environments
 - Centralizing the tracking of reproducibility of packages
 - Increasing the speed of new packages and updates reaching users and reducing the chance of introducing new errors, by spotting them early and notifying maintainers
 
@@ -107,15 +106,16 @@ in 2020 we implemented pthread thread creation and other related functions. mlib
 gotten a pthread cancellation implementation, and we have an upcoming blog post
 going into detail about it.
 
-**A new IDL Compiler: bragi.** In February 2020, we started work on our own interface description language, bragi. The aim is to replace all of our current protobuf usage with bragi. Although it's not yet fully feature-complete (we still want/need to add features like variants or inheritance), it has been enough to allow us to refactor some of our IPC protocols (namely, the POSIX, hardware, and filesystem protocols) to bragi, and begin implementing new protocols (like the ostrace one) in it.
+**A new IDL Compiler: bragi.** In February 2020, we started work on our own interface description language called bragi. The aim is to replace all of our current protobuf usage with bragi. Although it is not yet fully feature-complete (we still want/need to add features like variants or inheritance), bragi is already mature enough to enable us to refactor some of our IPC protocols (namely, the POSIX, hardware, and filesystem protocols) to use bragi. We also started implementing new protocols (like the ostrace one) based on bragi.
 
-**New Drivers: AHCI and NVMe and Storage Improvements.** Managarm's block driver stack received significant updates in 2021. We now have drivers for the two most important modern block device controllers AHCI and NVMe. The AHCI driver was written by Matt Taylor ([@64](https://github.com/64)), while the NVMe driver was contributed by Jin Xue ([@Jimx-](https://github.com/Jimx-)). Furthermore, due to a recent PR by Geert Custers ([@geertiebear](https://github.com/geertiebear)), we can now identify partitions by their UUIDs. This feature will make identifying the boot device more robust in the future and is especially important when running Managarm on physical hardware (and not in a virtual machine).
+**New Drivers: AHCI and NVMe and Storage Improvements.** Managarm's block driver stack received significant updates in 2021. We now have drivers for the two most important modern block device controllers AHCI and NVMe. The AHCI driver was written by Matt Taylor ([@64](https://github.com/64)), while the NVMe driver was contributed by Jin Xue ([@Jimx-](https://github.com/Jimx-)). Furthermore, due to a PR by Geert Custers ([@geertiebear](https://github.com/geertiebear)), we can now identify partitions by their UUIDs. This feature will make identifying the boot device more robust in the future and is especially important when running Managarm on physical hardware (and not in a virtual machine).
 
 **Networking Improvements.** Our networking stack ("netserver") can now connect to TCP servers over IPv4. It supports basic TCP features; however, the server side of the TCP 3-way handshake and path MTU discovery is not implemented yet. Once these gaps are filled, we will have a mostly complete IPv4 stack.
 
 ## New Ports and Port Updates
 
-In the last two years, we received a lot of new and sometimes updated ports, our collection contains over 200 ports now! A lot of the ports are various nice to have things, such as common unix utilities like `grep`, `sed`, `findutils` and `gawk`, development tools like `python`, `make` and `patch` and we got enough of the X11 stack ported that we can run XWayland and several X based apps like `xclock` and `gtklife`. Another noteworthy thing to mention here is the addition of a new bootloader called [limine](https://limine-bootloader.org/), which we now use by default (although `grub` is still supported at this time and there are no plans to remove that support) and the addition of a stripped down `util-linux` port, which includes useful utilities like `mount` and `losetup`. A final mention goes to some Rust ports as mentioned above.
+In the last two years, we received a lot of new and sometimes updated ports, our collection contains over 250 ports now! A lot of the ports are various nice-to-have things, such as common UNIX utilities like `grep`, `sed`, `findutils` and `gawk`, development tools like `python`, `make` and `patch` and we got enough of the X11 stack ported to run XWayland and several X based apps like `xclock` and `gtklife`. Another noteworthy thing to mention here is the addition of a new bootloader called [limine](https://limine-bootloader.org/), which we now use by default (although `grub` is still supported at this time and there are no plans to remove that support) and the addition of a stripped down `util-linux` port, which includes useful utilities like `mount` and `losetup`.
+
 As a blog post without images would be boring, here are some screenshots, first off is Managarm running `python`.
 ![python](/assets/2022-aug-update/python.png)
 After that, we have `xclock`.
@@ -124,10 +124,10 @@ And finally we have `exa` running.
 ![exa](/assets/2022-aug-update/exa.png)
 
 ### The road to X11
-The road to X11 was quite a bumpy one, with several issues that required digging deep in the X11 codebase to figure out. In the end, the biggest issues were a nasty epoll bug and the usage of abstract unix sockets, that weren't implemented. With that fixed (and a small amount of stubbing of shared memory functions in mlibc) we were able to run the `gtk-demo` demo program succesfully, paving the way for various other X based programs.
+The road to X11 was quite a bumpy one, with several issues that required digging deep into the X11 codebase. In the end, the biggest issues were a nasty epoll bug and the usage of abstract UNIX sockets, that were not implemented yet. With that fixed (and a small amount of stubbing of shared memory functions in mlibc) we were able to run the `gtk-demo` demo program successfully, paving the way for various other X based programs.
 ![gtk2](/assets/2022-aug-update/gtk2.png)
 
-Outside of XWayland, work is ongoing to also run the classic X.Org server, using its modesetting drivers.
+Outside of XWayland, work is ongoing to also run the classic X.Org server, while using its own DRM-based mode setting (instead of Weston's).
 
 ### QEMU
 Most of the pieces necessary for QEMU have already been in place, with the exception of `sigaltstack` and partial `munmap`/`mmap`/`mprotect` support. With both of these missing features implemented, we can run QEMU on Managarm, bringing us one step closer to being self-hosting.
@@ -135,17 +135,17 @@ Most of the pieces necessary for QEMU have already been in place, with the excep
 ![qemu](/assets/2022-aug-update/qemu.png)
 
 ### DOOM
-Until recently, we didn't have any DOOM port, mainly because we couldn't decide on which source port to use. We eventually decided upon dsda-doom, giving us a modern, yet vanilla DOOM experience, with extra speedrunning features as a bonus.
+Until recently, we did not have any DOOM port, mainly because we could not decide on which source port to use. We eventually decided upon dsda-doom, giving us a modern, yet vanilla DOOM experience, with extra speedrunning features as a bonus.
 
 ![doom](/assets/2022-aug-update/doom.png)
 
 ## What do we want to achieve in 2022?
 
-**Finish porting the package manager.** In the past months, considerable work went into porting a package manager. While the general infrastructure, both inside Managarm and outside in terms of an repository, are set up, some more work is required to actually get `xbps` to function properly. We aim to implement the missing functionality soon.
+**Finish porting xbps.** As mentioned above, considerable work went into porting the xbps package manager. While the general infrastructure, both inside Managarm and outside in terms of an repository, are set up, some more work is required to actually get `xbps` to function properly. We aim to implement the missing functionality soon.
 
-**Polish the port collection.** Currently, we have a lot of ports that work at least partially, but some use some pretty ugly hacks to get to that state. We should strive to get the quality of some of those ports up by implementing the proper functionality and not relying on hacks. This mostly means implementing missing functionality and testing for correctness. We also plan to start upstreaming support patches so that we can remove some patches from the collection.
+**Polish the port collection.** Currently, we have a lot of ports that work at least partially, but some ports use pretty ugly hacks to get to that state. We should strive to get the quality of these ports up by improving functionality within mlibc and by removing hacks. This also includes adding better tests to check for correctness. We also plan to start upstreaming support patches such that we can remove some patches from the collection.
 
-**Complete TTY subsystem.** We currently lack or incorrectly implement many TTY subsystem features (sessions and signals, process groups, et cetera), which are quite necessary for many kinds of programs as well as day-to-day life using the system. This goal is also accompanied by finishing up Unix process credentials and signals. Help is *definitely* wanted with this problem.
+**Complete TTY subsystem.** We currently lack or incorrectly implement many TTY subsystem features (sessions and signals, process groups, et cetera), which are quite necessary for many kinds of programs as well as day-to-day life using the system. This goal is also accompanied by finishing up Unix process credentials and signals.
 
 Some remaining goals from last time include porting more software, especially to self-host, improving the blockdev stack, making the system generally more stable and improving the netstack, especially the TCP implementation; and, of course, there is always more hardware to improve support for.
 
