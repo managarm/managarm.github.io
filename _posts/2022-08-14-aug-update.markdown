@@ -139,6 +139,8 @@ Until recently, we did not have any DOOM port, mainly because we could not decid
 
 ![doom](/assets/2022-aug-update/doom.png)
 
+We also have several new and upcoming ports that we will likely show-case in a follow-up post.
+
 ## What do we want to achieve in the next year?
 
 **Finish porting xbps.** As mentioned above, considerable work went into porting the xbps package manager. While the general infrastructure, both inside Managarm and outside in terms of an repository, are set up, some more work is required to actually get `xbps` to function properly. We aim to implement the missing functionality soon.
