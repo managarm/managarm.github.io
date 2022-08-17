@@ -73,9 +73,9 @@ Project member [@64](https://github.com/64) has been working to bring Rust to Ma
 * Adding bindings for [mlibc](https://github.com/managarm/mlibc) in Rust's [libc](https://github.com/rust-lang/libc) crate ([managarm/bootstrap-managarm#96](https://github.com/managarm/bootstrap-managarm/pull/96/files#diff-3d13f40b9e85b21978241de17ebb802857f04bf1af5b1f0d80f1c76f50d040d2)).
 * Patching Rust's standard library to support Managarm, and stubbing out functionality that we do not implement yet ([managarm/bootstrap-managarm#96](https://github.com/managarm/bootstrap-managarm/pull/96/files#diff-b086cf11aa261f991d7eb66b8164907ad9ee5bc4165cbc1739d65fcd2607be78)).
 * Integrating [cargo](https://github.com/rust-lang/cargo) with our build system so that we can cross-compile crates for Managarm ([managarm/xbstrap#48](https://github.com/managarm/xbstrap/pull/48)).
-* Porting [ripgrep](https://github.com/BurntSushi/ripgrep) and [exa](https://github.com/ogham/exa) ([managarm/bootstrap-managarm#102](https://github.com/managarm/bootstrap-managarm/pull/102)).
+* Porting [ripgrep](https://github.com/BurntSushi/ripgrep), [exa](https://github.com/ogham/exa) and [alacritty](https://github.com/alacritty/alacritty) ([managarm/bootstrap-managarm#102](https://github.com/managarm/bootstrap-managarm/pull/102), [managarm/bootstrap-managarm#180](https://github.com/managarm/bootstrap-managarm/pull/180)).
 
-There is still work to be done before all of Rust's standard library is fully supported within Managarm. Notably, thread creation hits unimplemented code paths within [mlibc](https://github.com/managarm/mlibc), but this is our next priority.
+There is still work to be done before all of Rust's standard library is fully supported within Managarm. Our next priority is upstreaming our patches back into the Rust ecosystem, since maintaining these downstream has turned out to be quite a struggle.
 
 In the long term, we would like to support Rust drivers for Managarm. This will involve adding support for Rust in our IPC protocol codegen tool [bragi](https://github.com/managarm/bragi), and writing a Rust wrapper for our asynchronous syscall API.
 
@@ -139,7 +139,7 @@ Until recently, we did not have any DOOM port, mainly because we could not decid
 
 ![doom](/assets/2022-aug-update/doom.png)
 
-## What do we want to achieve in 2022?
+## What do we want to achieve in the next year?
 
 **Finish porting xbps.** As mentioned above, considerable work went into porting the xbps package manager. While the general infrastructure, both inside Managarm and outside in terms of an repository, are set up, some more work is required to actually get `xbps` to function properly. We aim to implement the missing functionality soon.
 
