@@ -150,9 +150,7 @@ However, on HP-UX, EINTR means that the file descriptor has *not* been closed.
 Currently the special case of ``close(2)`` is not handled in mlibc.
 
 [^1]: sysdeps are mlibc's terminology for describing functions that should be implemented by the target platform. This can be a syscall (e.g. ``read(2)`` ), or functions that rely on specific details of the platform's syscall mechanisms.
-[^2]: The Thread Control Block, a structure allocated by the libc to keep track
-  of various variables related to the thread. The TCB in mlibc can be found
-  [here](https://github.com/managarm/mlibc/blob/bf38c0ec9682fa542908b7a659df67eb07f19966/options/internal/include/mlibc/tcb.hpp#L82).
+[^2]: The Thread Control Block, a structure allocated by the libc to keep track of various variables related to the thread. The TCB in mlibc can be found [here](https://github.com/managarm/mlibc/blob/bf38c0ec9682fa542908b7a659df67eb07f19966/options/internal/include/mlibc/tcb.hpp#L82).
 
 #### On glibc's implementation
 
