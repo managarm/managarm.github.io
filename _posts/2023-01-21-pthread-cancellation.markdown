@@ -45,7 +45,7 @@ This revealed the following key implementation points:
 With this knowledge, we can begin implementing pthread cancellation.
 
 ### Cancellation state functions
-``pthread_secancelstate()`` and ``pthread_setcanceltype()`` are quite easy functions to implement. They boil down to atomically setting some flags. ``pthread_setcancelstate()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L315), and ``pthread_setcanceltype()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L280).
+``pthread_setcancelstate()`` and ``pthread_setcanceltype()`` are quite easy functions to implement. They boil down to atomically setting some flags. ``pthread_setcancelstate()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L315), and ``pthread_setcanceltype()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L280).
 
 There are two notable implementation details. First, these functions can cause a cancellation if the thread has received a cancellation request _and_ asynchronous cancellation is enabled by the call to the function. For example, while the cancellation state of a thread was set to deferred, it received a cancellation request. This doesn't cause anything to happen immediately. However, if the thread now calls ``pthread_setcanceltype()`` to set itself to asynchronous cancellation, it will get cancelled in that call.
 
