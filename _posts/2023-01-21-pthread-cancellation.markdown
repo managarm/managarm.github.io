@@ -11,7 +11,7 @@ excerpt: "A dive into the implementation details of POSIX pthreads."
 A universal goal for any hobby OS to work towards is self-hosting. This is also
 one of the goals Managarm hopes to achieve in the near future. Managarm is a pragmatic microkernel-based OS with fully asynchronous I/O (see our [GitHub repository](https://github.com/managarm/managarm) for more information). The userspace is powered using the highly portable [mlibc](https://github.com/managarm/mlibc) libc.
 
-We would like to be able to compile Managarm natively following the same tools we currently use for cross-compiling. ``git`` is largely used throughout the Managarm compilation and bootstrapping process.  Managarm has a compiling ``git`` port. However, running almost any command hits an unimplemented mlibc function on ``pthread_setcancelstate()``. While this function just sets some flags for a thread, it is member of a complex pthread feature set - thread cancellation. ``git`` would maybe have worked by making ``pthread_setcancelstate()`` a no-op, however we decided to implement most of the cancellation functionality, for future ports and feature-completeness.
+We would like to be able to compile Managarm natively following the same tools we currently use for cross-compiling. ``git`` is largely used throughout the Managarm compilation and bootstrapping process.  Managarm has a compiling ``git`` port. However, running almost any command hits an unimplemented mlibc function on ``pthread_setcancelstate()``. While this function just sets some flags for a thread, it is a member of a complex pthread feature set - thread cancellation. ``git`` would maybe have worked by making ``pthread_setcancelstate()`` a no-op, however we decided to implement most of the cancellation functionality, for future ports and feature-completeness.
 ## Requirements
 
 This section summarizes the requirements and terminology for POSIX thread cancellation. More information can be found by reading the documentation for the respective functions in the [POSIX specification](https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_cancel.html).
@@ -42,7 +42,7 @@ This revealed the following key implementation points:
 * Glibc and musl both use flags in their ``pthread_t`` struct to keep track of cancellation state. Glibc uses a bitfield, while musl uses seperate fields.
 * Musl has a curious interaction between the canceling code and their syscall routines, the details of which will be discussed in a following section.
 
-With this knowledge, we can being implementing pthread cancellation.
+With this knowledge, we can begin implementing pthread cancellation.
 
 ### Cancellation state functions
 ``pthread_secancelstate()`` and ``pthread_setcanceltype()`` are quite easy functions to implement. They boil down to atomically setting some flags. ``pthread_setcancelstate()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L315), and ``pthread_setcanceltype()`` is implemented [here](https://github.com/managarm/mlibc/blob/5e6cfd7e240c9482552bb482653ee2a3806e0add/options/posix/generic/pthread-stubs.cpp#L280).
