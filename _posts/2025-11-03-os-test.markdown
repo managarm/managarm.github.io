@@ -21,6 +21,8 @@ The good news is that Managarm is now included on the [published results table](
 
 os-test is run with `make test` on the to-be-tested operating system. This writes out the result information to an output directory. Optimally, this could be automated through SSH, so that  Jonas 'sortie' Termansen (the maintainer of [sortix](https://sortix.org) and os-test) could run and download the results in their testing lab. Because Managarm does not have an OpenSSH port (yet), we are instead running os-test on GitHub Actions for the [managarm/managarm](https://github.com/managarm/managarm) repository, from which we publish the results as a downloadable `.tar.gz` artifact.
 
+Whenever the results table on the website is updated, the latest results tarball is used to provide the information. In the future, we would like to ship an OpenSSH port so that sortie could just spin up a VM with managarm, run the tests over SSH and download them with a tool like scp.
+
 ## Running it on Managarm yourself
 
 You can install the `os-test` package on Managarm via the regular means: you can use `xbps-install os-test` on Managarm or install it via xbstrap into your sysroot.
@@ -46,14 +48,16 @@ You'll find the output under `html/`.
 
 ## Future plans
 
-As we now have a nice baseline, we obviously want to improve our compliance. There are quite a few tests that are low-hanging fruit, and there are some features that -- if implemented -- would make entire classes of tests work (e.g. loopback interfaces).
+As we now have a nice baseline ([which is also tracked upstream](https://gitlab.com/sortix/os-test-results)), we obviously want to improve our compliance. There are quite a few tests that are low-hanging fruit, and there are some features that -- if implemented -- would make entire classes of tests work (e.g. loopback interfaces).
 
 It would be nice to use it for regression testing on CI as well; this would allow us to catch issues early on. The new `make json` and `make jsonl` targets of os-test provide machine-readable test results that can be used to implement this. Testing mlibc functionality on Linux would also be quite interesting (in addition to the glibc and musl targets that os-tests already tests on Linux). We already use the Linux sysdeps for running tests, and we have built Linux From Scratch with it already. So why not?
 
-As Managarm and mlibc have testsuites of their own already, we want to upstream them to os-test where reasonable, so other operating systems get to enjoy the benefits of a common test suite. Maybe your OS is the next to run os-test?
+As Managarm and mlibc have testsuites of their own already, we want to upstream them to os-test where reasonable, so other operating systems get to enjoy the benefits of a common test suite. Integration of a new OS was trivial (just specify what libraries to link against); maybe your OS is the next to run os-test?
 
 ## Help wanted!
 
+Please consider contributing to os-test! New tests are accepted as Merge Requests on their [GitLab repository](https://gitlab.com/sortix/os-test) and are always welcome. The IRC on irc.sortix.org in the #sortix channel is a great way to discuss os-test. Test suites like this would not be possible without their contributors, and most of os-test was written by sortie for [sortix](https://sortix.org). Thank you!
+
 If you want to help us tackle failing tests, feel free to contribute! If you want to work on Managarm, we recommend checking out our [handbook](https://docs.managarm.org/handbook/) and the [repository](https://github.com/managarm/managarm). Our libc, [mlibc](https://github.com/managarm/mlibc), also needs work to pass as many `include` and `namespace` tests as possible.
 
-If you want to get in touch with the team, you can find us on [Discord](https://discord.gg/7WB6Ur3) or on [irc.libera.chat](irc.libera.chat) in the #managarm channel. Also, if you want to support Managarm, please consider [donating to the project](https://github.com/sponsors/avdgrinten)!
+If you want to get in touch with the managarm team, you can find us on [Discord](https://discord.gg/7WB6Ur3) or on irc.libera.chat in the #managarm channel. Also, if you want to support Managarm, please consider [donating to the project](https://github.com/sponsors/avdgrinten)!
