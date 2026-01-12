@@ -1,6 +1,7 @@
 # Site settings.
 title: The Managarm Project
 #email: info@managarm.org
+future: true
 description: >
     Managarm is a pragmatic microkernel-based OS with fully asynchronous
     I/O.
