@@ -1,0 +1,72 @@
+---
+layout: post
+title: "Better IOMMU support for Managarm"
+excerpt: "How DMA remapping helps our security posture"
+---
+<span style="font-size: 11pt;">Post written by [@no92](https://github.com/no92).</span>
+
+## Introduction
+
+Managarm is a fully asynchronous microkernel-based operating system, and as such places great emphasis on isolation of components. While the microkernel approach famously involves security boundaries between programs (such as separate address spaces), isolating devices is just as important to enforce boundaries. We recently added support for [IOMMUs](https://en.wikipedia.org/wiki/Input%E2%80%93output_memory_management_unit) to use DMA remapping, which allows us to protect against misprogrammed, misbehaving or malicious devices accessing memory with DMA.
+
+## Motivation
+
+Managarm drivers run as userspace servers, as opposed to e.g. Linux where drivers are usually part of the kernel. Running the driver with fewer privileges has obvious security benefits; however, without further mitigations, some of these can be undermined by hardware peculiarities.
+
+Usually, separation between applications is enforced by having separate address spaces (among other things of course), which effectively limits the access to a certain set of (physical) memory. Applications can manage it through various interfaces, including [`mmap()`](https://man7.org/linux/man-pages/man2/mmap.2.html) to request more memory or to map a file, or `munmap()` to free an area. These requests are served by the operating system, which ultimately manages the [MMU](https://en.wikipedia.org/wiki/Memory_management_unit) that provides paging, i.e. a mapping of application-visible addresses to physical memory address on the system. The important point is that an application does not get blanket access to all memory, but access is controlled by the OS.
+
+Some hardware has the ability to initiate direct reads and writes to memory, bypassing the CPU and MMU (hence the name ["Direct Memory Access (DMA)"](https://en.wikipedia.org/wiki/Direct_memory_access)). This has favorable performance properties but means that a potentially malicious (or misprogrammed) device can access arbitrary physical memory. In order to prevent this, most PCs sold after ~2013 ship with an IOMMU. This acts very similar to an MMU, except that it translates device-visible addresses to physical memory. This allows the operating system to retain control over what memory is accessible to devices without involving the CPU in every memory transaction.
+
+## What we implemented so far
+
+With a series of PRs ([managarm#1359](https://github.com/managarm/managarm/pull/1359), [managarm#1396](https://github.com/managarm/managarm/pull/1396), [managarm#1361](https://github.com/managarm/managarm/pull/1361), [managarm#1399](https://github.com/managarm/managarm/pull/1399), [managarm#1420](https://github.com/managarm/managarm/pull/1420), [libarch#19](https://github.com/managarm/libarch/pull/19)), we implemented support for Intel's IOMMUs (VT-d) and a number of abstractions for drivers to use. The IOMMU driver, domain assignment and DMA space handling are done in-kernel, similar to how virtual memory management for application also lives in the kernel.
+
+On the driver side, we adjusted our memory allocation and DMA-issuing code to use our new concepts of DMA spaces. A DMA space is an address space for a device, which by default does not map anything. Drivers can allocate DMA objects from a DMA pool, which allocates backing (physical) memory for the objects. The DMA objects can then be mapped into DMA spaces; this should allow us to implement DMA buffer sharing in the future.
+
+We have already converted some of our drivers to use the new infrastructure around DMA remapping:
+
+- all disk drivers: ATA, AHCI, NVMe, virtio-blk, USB storage
+- the xHCI HCD driver
+- all other virtio drivers: virtio-net, virtio-gpu, virtio-console
+
+The remaining drivers that do DMA are being worked on, and will be updated to use the IOMMU's DMA remapping in the near future.
+
+## Try it out for yourself
+
+If you just want to try out Managarm (without the IOMMU being active), the [instructions in the README](https://github.com/managarm/managarm#trying-out-managarm) are a good start. Testing out the IOMMU additions can also be done with the [nightly image](https://builds.managarm.org/projects/managarm/success/repo/files/x86_64/image.xz) and the following QEMU command:
+
+```sh
+unxz image.xz # decompress the nightly image
+qemu-system-x86_64 -m 2G -display gtk,zoom-to-fit=off -enable-kvm -debugcon stdio -machine smbios-entry-point-type=64 -device intel-iommu,intremap=on -M q35,kernel-irqchip=split -cpu host,migratable=no -smp 4 -device qemu-xhci,id=xhci -drive id=boot-drive,file=image,format=raw,if=none -device virtio-blk-pci,disable-modern=off,disable-legacy=on,iommu_platform=on,drive=boot-drive -netdev user,id=net0 -device virtio-net,disable-modern=off,disable-legacy=on,iommu_platform=on,netdev=net0 -device virtio-vga,disable-modern=off,disable-legacy=on,iommu_platform=on -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0
+```
+
+This will enable the IOMMU for the virtio-blk, virtio-gpu and virtio-net drivers, as well as xHCI.
+
+If you want to try this out on real hardware, any IOMMU that is present should automatically be picked up without further configuration. You can opt out of using the IOMMU (for now) with the kernel commandline `iommu=off`, if needed.
+
+Because the IOMMU is a fairly low-level feature, the fact that it is active is not immediately visible to the user. To determine if an Intel IOMMU is being used, you can look at the boot logs. You should find something like this near the top:
+
+```
+thor: DMAR host address width 48
+thor: unhandled DMAR device scope type 3
+thor: IOMMU version 1.0
+thor: DRHD for segment 0
+thor: cap 0x00d2008c222f0606 ecap 0x0000000000f00f5a
+thor: Configuring IRQ iommu0-fault-msi to trigger mode: 1, polarity: 1
+thor: Allocating IRQ slot 18 to iommu0-fault-msi
+thor: Configuring IRQ iommu0-invalidation-msi to trigger mode: 1, polarity: 1
+thor: Allocating IRQ slot 19 to iommu0-invalidation-msi
+```
+
+If this is missing, either the IOMMU is not supported (due to not being Intel VT-d, or missing capabilities), or was disabled by the kernel commandline.
+
+## Supported by NLnet
+
+[This project](https://nlnet.nl/project/Managarm/) was funded through the [NGI0 Commons Fund](https://nlnet.nl/commonsfund/), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 101135429. Additional funding is made available by the Swiss State Secretariat for Education, Research and Innovation (SERI).
+
+<img src="/assets/2026-iommu/nlnet.svg" alt="NLnet logo" width="200" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;" />
+<img src="/assets/2026-iommu/NGI0Commons.svg" alt="NGI0 Commons logo" width="200" style="display: inline-block; margin-bottom: 10px;" />
+
+## Talk to us
+
+We welcome contributions to Managarm! If you want to help out, feel free to look at [our issue tracker](https://github.com/managarm/managarm/issues), or chat with us on [Discord](https://discord.gg/7WB6Ur3) or IRC in ``#managarm`` on ``irc.libera.chat`` about ideas.
