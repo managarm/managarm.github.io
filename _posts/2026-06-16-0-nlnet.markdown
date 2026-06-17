@@ -1,0 +1,45 @@
+---
+layout: post
+title: "Managarm receives NGI Zero grant to enhance its web capabilities"
+---
+<span style="font-size: 11pt;">Post written by [Marvin Friedrich](https://github.com/marv7000), [Alexander van der Grinten](https://github.com/avdgrinten) and [@no92](https://github.com/no92).</span>
+
+<img src="/assets/2026-iommu/nlnet.svg" alt="NLnet logo" width="200" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;" />
+<img src="/assets/2026-iommu/NGI0Commons.svg" alt="NGI0 Commons logo" width="200" style="display: inline-block; margin-bottom: 10px;" />
+
+We are happy to announce that Managarm recently received a grant from NLnet's NGI0 Commons fund to enhance its usability, stability and security for the web.
+
+## About the NGI0 Commons fund
+
+[NLnet](https://nlnet.nl) is a European non-profit foundation with the goal of improving the internet by supporting open-source projects with a European dimension. The [NGI0 Commons fund](https://nlnet.nl/commonsfund/) aims to provide support for small and medium-sized projects in the areas of free and open-source hardware, software, standards and other resources.
+
+## What the grant funds for Managarm
+
+The grant will allow us to improve Managarm's web capabilities both on the client side and on the server side. On the client side, we will port and enable a more capable browser to Managarm; most likely, this will be Epiphany aka GNOME Web. On the server side, we plan to bring web servers and other server applications (e.g., databases) to Managarm.
+
+Aside from these usability improvements, a lot of the tasks related to the grant focus on stability and security. Among other things, the grant will enable us to:
+
+- enhance our network and USB stacks,
+- improve our hardware compatibility on ACPI systems,
+- fill gaps in our virtualization support,
+- add better swapping, OOM handling and resource accounting,
+- improve shutdown and crash resilience,
+- improve the stability and security of core parts of our system such as the kernel and POSIX emulation,
+- add IOMMU support to harden against driver failures and DMA attacks,
+- improve our infrastructure (e.g., for automated tests both on virtualized platforms and real hardware).
+
+## Next steps
+
+We have started working on many of the tasks and work is constantly trickling into the codebase as PRs. Among them, we landed support for [IP fragmentation](https://github.com/managarm/managarm/pull/1387), some [USB-related work](https://github.com/managarm/managarm/pull/1404), a [port of Epiphany](https://github.com/managarm/bootstrap-managarm/pull/722), [ACPI support for aarch64](https://github.com/managarm/managarm/pull/1389). We also started using [IOMMU-based DMA remapping for some of our drivers]({% post_url 2026-06-16-1-iommu %}). Aside from these, we have more things being worked on already, and you will see them in the repository or hear about them in future blog posts.
+
+## Links
+
+- [Managarm's NLnet project page](https://nlnet.nl/project/Managarm/)
+- [Managarm's main repository](https://github.com/managarm/managarm/)
+
+## Acknowledgement
+
+[This project](https://nlnet.nl/project/Managarm/) was funded through the [NGI0 Commons Fund](https://nlnet.nl/commonsfund/), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 101135429. Additional funding is made available by the Swiss State Secretariat for Education, Research and Innovation (SERI).
+
+<img src="/assets/2026-iommu/nlnet.svg" alt="NLnet logo" width="200" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;" />
+<img src="/assets/2026-iommu/NGI0Commons.svg" alt="NGI0 Commons logo" width="200" style="display: inline-block; margin-bottom: 10px;" />
