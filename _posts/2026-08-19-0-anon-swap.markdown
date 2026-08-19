@@ -1,0 +1,54 @@
+---
+layout: post
+title: "Swapping of anonymous memory on Managarm"
+---
+<span style="font-size: 11pt;">Post written by [@48cf](https://github.com/48cf).</span>
+
+## Introduction
+
+Managarm is an asynchronous microkernel-based operating system. Its kernel, thor, has long been able to evict pages of file-backed mappings under memory pressure, but anonymous memory - which includes stacks, heap memory and `MAP_ANONYMOUS` mappings - could never be evicted. We recently [merged a pull request](https://github.com/managarm/managarm/pull/1522) that adds support for swapping non-copy-on-write anonymous memory, which lets the kernel evict memory allocated by applications and servers, for example by writing it to the disk: the kernel decides *which* pages leave RAM, while a server running in userspace decides *where* they go. Private anonymous memory is copy-on-write and stays out of scope for now, which means that in practice shared anonymous mappings (`MAP_SHARED | MAP_ANONYMOUS`) and tmpfs pages are currently eligible for swapping once a swap server exists.
+
+## Why swapping is different in a microkernel
+
+In a monolithic kernel, swapping is a substantial amount of code: a format for the swap file or partition, an allocator that hands out slots within it, a path in the block layer to perform I/O while the system is already out of memory - code that evicts memory cannot itself depend on allocating any.
+
+In contrast, thor doesn't have to deal with any of that - its responsibility ends at deciding that a page should leave RAM and at which swap offset it belongs; the I/O itself is performed by a server in userspace. The fact that swapping is pretty closely related to evicting page-cache memory let us build on the same primitives. The first one is `kHelSubmitManageMemory`, which is an asynchronous operation that lets userspace servers retrieve requests from the kernel whenever a page should be evicted or re-initialized from disk. The second one is `helUpdateMemory()`, which is a syscall that lets the same server complete these requests.
+
+## How we did it
+
+### The user-facing API
+
+- `helCreateSwapSpace()`: This is the main and most important syscall: it drives the kernel-side of what a swap server interacts with. Similarly to `helCreateManagedMemory()`, it returns two handles: the backing handle which is what the server interacts with to receive and complete requests, and a handle to the swap space itself, which is used when allocating swappable memory.
+
+- `helAllocateSwappableMemory()`: Once a program has a way to swap memory, it needs to explicitly opt into that behavior at allocation time. Instead the program uses this new analogue which takes a size and flags like `helAllocateMemory()`, plus the swap space handle which you can get from the first syscall.
+
+- `helSetSwapBudget()`: Before any memory is swapped out by the kernel, the swap server needs to explicitly announce how many pages it can service - in other words, it sets a budget. This corresponds to how large the swap file/partition is on the disk.
+
+### The kernel-side changes
+
+On the kernel side we reused the existing data structure (`ManagedSpace`) which manages the page cache, by subclassing it. We also had to make sure it can handle budgeting, since page cache gets infinite budget as the files on disk are the backing store - but for swap spaces the kernel needs to work within the constraints the swap server sets.
+
+While we did get to repurpose the core API for managing memory spaces, what it couldn't handle was the unique case of swap memory: when you allocate memory for the first time, the contents are zero-initialized and not read from the disk - the page can only be read back after it is swapped out. The "initialization" step for page cache mappings boils down to populating the mapping with the contents of the backing store. In the case of swap memory that step happens only after the page was already evicted - the kernel decides what to do depending on a per-page flag (`swapCopyValid`) that tells it whether the page was swapped out or not.
+
+The other thing that page-cache memory never has to worry about is a page simply going away. In the case of a file's cache, the page belongs to the file and it stays valid no matter how many processes map it and only leaves the cache when the kernel decides to reclaim it. Anonymous memory works the other way around: the page belongs to whoever allocated it, so when it is freed the memory and swap budget allocated for it have to be cleaned up.
+
+That would be straightforward if eviction was a single step, but it isn't. By the time something asks for a page to be discarded it can be anywhere in the eviction pipeline: resident and clean, dirty and waiting for swap budget to become available or already handed to the swap server. Each of these needs its own handling, and getting that right is where most of the complexity of the patch came from.
+
+## Testing
+
+Even though we don't have the userspace swap server yet, the swap machinery can already be tested quite easily by adding `thor.torture-uncaching` to the kernel command line and running the kernel test suite. This command line option will make thor evict memory aggressively for the purpose of testing these specific code paths. The kernel tests include a "mini swap server", which emulates disk I/O by using non-swappable memory as backing store; that way everything can be tested end-to-end.
+
+## What's next
+
+The logical next step is adding a userspace server to handle swap requests. Once we have it, all eligible allocations can be switched to use `helAllocateSwappableMemory()` instead so users can directly benefit from these changes. After we have a solid foundation and can properly exercise all the moving parts, we will implement swapping of copy-on-write anonymous memory.
+
+## Supported by NLnet
+
+[This project](https://nlnet.nl/project/Managarm/) was funded through the [NGI0 Commons Fund](https://nlnet.nl/commonsfund/), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 101135429. Additional funding is made available by the Swiss State Secretariat for Education, Research and Innovation (SERI).
+
+<img src="/assets/2026-anon-swap/nlnet.svg" alt="NLnet logo" width="200" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;" />
+<img src="/assets/2026-anon-swap/NGI0Commons.svg" alt="NGI0 Commons logo" width="200" style="display: inline-block; margin-bottom: 10px;" />
+
+## Talk to us
+
+We welcome contributions to Managarm! If you want to help out, feel free to look at [our issue tracker](https://github.com/managarm/managarm/issues), or chat with us on [Discord](https://discord.gg/7WB6Ur3) or IRC in `#managarm` on `irc.libera.chat` about ideas.
