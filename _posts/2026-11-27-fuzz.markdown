@@ -1,0 +1,52 @@
+---
+layout: post
+title: "Coverage-guided fuzzing for Managarm"
+---
+<span style="font-size: 11pt;">Post written by [Matheus](https://github.com/Mathewnd).</span>
+
+## Introduction
+
+For an operating system, being stable is fundamental. Imagine the operating system crashes while the user is working on an important document or in a job interview. At best, it is highly inconvenient; at worst, the user loses data and opportunities. Therefore, it is essential to make use of every technique available to find and diagnose stability issues.
+
+One such technique is feeding random or invalid data into a program and watching for crashes. To increase the effectiveness of this, the code paths reached in each attempt can be tracked and used to fine-tune the input data. This is called coverage-guided fuzzing, and how we got it working for Managarm will be the focus of this post.
+
+## Setting up syzkaller
+
+We have chosen to use Google's [syzkaller](https://github.com/google/syzkaller/) as our fuzzer. It is battle-tested, used by other operating systems like Linux, Fuchsia and the BSDs, and has nice features like automatically creating reproducers for bugs. One of the downsides, though, is that it is built with kernel fuzzing in mind, so fuzzing userspace servers is a bit more involved.
+
+For Managarm, we use syzkaller's HostFuzzer mode. There is a manager program, ``syz-manager``, which runs in the host and is responsible for managing VMs, creating programs, finding reproducers and parsing logs. At VM boot, it copies the executor program ``syz-executor`` into Managarm using SSH and then runs it. The executor is responsible for actually running the programs and relaying back coverage information to the manager.
+
+## Fuzzing Thor
+
+Managarm's kernel, Thor, is fuzzed in a similar way to a monolithic kernel. We give Hel (Thor's system call API) descriptions to syzkaller and it generates programs which run specific sequences of system calls. While getting started was pretty simple, implementing coverage was the real challenge.
+
+Kernel code coverage is exposed to userspace using a simple API: ``helCreateKcovBuffer()``, ``helEnableCoverage()`` and ``helDisableCoverage()``. This allows the user to create a coverage buffer which can then be mapped into user memory and filled with coverage data by the kernel using compiler instrumentation (``-fsanitize-coverage=trace-pc``).
+
+While this is enough for simple uses, syzkaller forks with the buffer mapped, and the posix server needs to know about the mapping to handle it properly. For this reason, we expose a ``/dev/kcov`` device which is what syzkaller actually uses to set up coverage. All of this was implemented in [managarm#1779](https://github.com/managarm/managarm/pull/1779) and [mlibc#1949](https://github.com/managarm/mlibc/pull/1949).
+
+## Fuzzing the posix server
+
+Instead of fuzzing all servers directly, we have chosen to fuzz only the posix server. This simplifies the approach while still fuzzing the biggest server directly and the others indirectly.
+
+The approach we use for posix is to call the libc functions which are directly mapped to lower-level sysdeps in mlibc, like ``write()`` or ``open()``. This removes the need for describing the IPC protocol to syzkaller. The downsides of this approach, however, are that we do not actually do raw IPC and the libc functions might do extra checks. Because of that, we could miss a few bugs.
+
+For coverage, we reuse the ``/dev/kcov`` interface by having the posix server insert its own coverage data alongside the kernel. As posix serves all processes from shared threads, the coverage recorded on those threads can't be attributed to a particular caller. To work around this, once a process opens ``/dev/kcov``, each thread it creates afterwards is served by a dedicated thread inside posix, and that thread writes its coverage into the caller's buffer. 
+
+Syzkaller distinguishes between posix and Thor coverage data by the PC address in the buffer, and insertion of data between them is synchronized by allocating space using a CAS loop. Posix coverage was implemented on [managarm#1804](https://github.com/managarm/managarm/pull/1804).
+
+## How good is it at finding crashes?
+
+So far, we have found over 50 crashes across Thor and the posix server by fuzzing. A lot of these were low-hanging fruit like assertion failures caused by invalid arguments, but real bugs were also found. One example of a bug that was found by fuzzing is ``setgroups()`` crashing the posix server when setting more than 65536 group ids. This was fixed on [managarm#1808](https://github.com/managarm/managarm/pull/1808).
+
+We currently have one Raspberry Pi 4B dedicated to fuzzing. The number of different crashes found is expected to grow as we fix the more common ones, which slow down the fuzzing process by requiring more VM reboots.
+
+## Supported by NLnet
+
+[This project](https://nlnet.nl/project/Managarm/) was funded through the [NGI0 Commons Fund](https://nlnet.nl/commonsfund/), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 101135429. Additional funding is made available by the Swiss State Secretariat for Education, Research and Innovation (SERI).
+
+<img src="/assets/2026-fuzz/nlnet.svg" alt="NLnet logo" width="200" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;" />
+<img src="/assets/2026-fuzz/NGI0Commons.svg" alt="NGI0 Commons logo" width="200" style="display: inline-block; margin-bottom: 10px;" />
+
+## Talk to us
+
+We welcome contributions to Managarm! If you want to help out, feel free to look at [our issue tracker](https://github.com/managarm/managarm/issues), or chat with us on [Discord](https://discord.gg/7WB6Ur3) or IRC in `#managarm` on `irc.libera.chat` about ideas.
